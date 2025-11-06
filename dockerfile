@@ -1,7 +1,5 @@
-# Dockerfile - simple static site using nginx
 FROM nginx:stable-alpine
 COPY index.html /usr/share/nginx/html/index.html
-# optional: expose port 80 (k8s will handle mapping)
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD wget -qO- http://localhost/ >/dev/null || exit 1

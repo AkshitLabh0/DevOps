@@ -1,27 +1,25 @@
 pipeline {
   agent any
   environment {
-    IMAGE = "DOCKERHUB_USER/happy-paws"   // <-- change this
-    TAG   = "${env.BUILD_NUMBER}"        // unique tag per build
-    CREDS = "dockerhub-creds"            // your credentials ID
-    DEPLOYMENT = "happy-paws"
-    CONTAINER  = "happy-paws"
+    IMAGE       = "akshit0o/animal-adoption"
+    TAG         = "${env.BUILD_NUMBER}"
+    CREDS       = "dockerhub-creds"
+    DEPLOYMENT  = "animal-adoption"
+    CONTAINER   = "animal-adoption"
   }
 
   stages {
-    stage('Checkout') {
+    stage('Checkout SCM') {
       steps { checkout scm }
     }
 
-    stage('Docker Build') {
+    stage('Build Docker Image') {
       steps {
-        script {
-          docker.build("${IMAGE}:${TAG}")
-        }
+        sh "docker build -f dockerfile -t ${IMAGE}:${TAG} ."
       }
     }
 
-    stage('Docker Push') {
+    stage('Push to Docker Hub') {
       steps {
         withCredentials([usernamePassword(credentialsId: env.CREDS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
           sh 'echo $PASS | docker login -u $USER --password-stdin'
@@ -32,11 +30,8 @@ pipeline {
 
     stage('Deploy to Kubernetes') {
       steps {
-        // Ensure manifests exist (first time already applied, but this is safe)
         sh "kubectl apply -f k8s/service.yaml || true"
-        sh "kubectl apply -f k8s/deployment.yaml"
-
-        // Update deployment image to the new tag and wait for rollout
+        sh "kubectl apply -f k8s/deployment.yaml || true"
         sh "kubectl set image deployment/${DEPLOYMENT} ${CONTAINER}=${IMAGE}:${TAG} --record"
         sh "kubectl rollout status deployment/${DEPLOYMENT} -w --timeout=180s"
       }
@@ -44,13 +39,6 @@ pipeline {
   }
 
   post {
-    success {
-      echo "Deployed ${IMAGE}:${TAG} to Kubernetes."
-    }
-    failure {
-      sh 'kubectl get pods -o wide || true'
-      sh "kubectl describe deployment ${DEPLOYMENT} || true"
-      sh "kubectl get events --sort-by=.lastTimestamp | tail -n 50 || true"
-    }
+    always { echo "Pipeline build ${currentBuild.currentResult}" }
   }
 }
