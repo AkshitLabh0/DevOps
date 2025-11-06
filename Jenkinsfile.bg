@@ -1,0 +1,102 @@
+pipeline {
+  agent any
+  options { timestamps() }
+
+  parameters {
+    booleanParam(name: 'SCALE_DOWN_OLD', defaultValue: false, description: 'Scale down old color after switch')
+  }
+
+  environment {
+    IMAGE        = "akshit0o/happy-paws"
+    CREDS        = "dockerhub-creds"
+    KUBE_NS      = "happy-paws-bg"
+    LIVE_SVC     = "happy-paws-svc"
+    DEPLOY_BLUE  = "happy-paws-blue"
+    DEPLOY_GREEN = "happy-paws-green"
+    CURL_IMG     = "curlimages/curl:8.10.1"
+    TAG          = "${env.BUILD_NUMBER}"
+  }
+
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+
+    stage('Build & Push') {
+      steps {
+        script {
+          docker.build("${env.IMAGE}:${env.TAG}")
+          withCredentials([usernamePassword(credentialsId: env.CREDS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+            sh 'echo $PASS | docker login -u $USER --password-stdin'
+            sh "docker push ${env.IMAGE}:${env.TAG}"
+          }
+        }
+      }
+    }
+
+    stage('Find Live & Idle Colors') {
+      steps {
+        script {
+          def live = sh(returnStdout: true,
+                        script: "kubectl get svc ${env.LIVE_SVC} -n ${env.KUBE_NS} -o jsonpath='{.spec.selector.track}' || echo blue").trim()
+          if (!live) live = "blue"
+          def idle = (live == "blue") ? "green" : "blue"
+          echo "Live: ${live} | Idle: ${idle}"
+          env.LIVE_COLOR = live
+          env.IDLE_COLOR = idle
+        }
+      }
+    }
+
+    stage('Deploy Idle Color') {
+      steps {
+        script {
+          sh "kubectl apply -n ${env.KUBE_NS} -f k8s/bg/deploy-${env.IDLE_COLOR}.yaml"
+          def deployName = (env.IDLE_COLOR == 'blue') ? env.DEPLOY_BLUE : env.DEPLOY_GREEN
+          sh "kubectl set image -n ${env.KUBE_NS} deployment/${deployName} happy-paws=${env.IMAGE}:${env.TAG} --record"
+          sh "kubectl rollout status -n ${env.KUBE_NS} deployment/${deployName} -w --timeout=180s"
+        }
+      }
+    }
+
+    stage('Smoke Test Idle Color') {
+      steps {
+        script {
+          def svc = "happy-paws-${env.IDLE_COLOR}"
+          sh """
+          for i in \$(seq 1 5); do
+            kubectl run curl-tmp -n ${env.KUBE_NS} --rm -i --restart=Never --image=${env.CURL_IMG} -- \
+              sh -lc 'curl -fsS http://${svc}.${env.KUBE_NS}.svc.cluster.local:80/ >/dev/null' && exit 0
+            echo 'Retrying smoke test...'
+            sleep 3
+          done
+          echo 'Smoke tests failed.'
+          exit 1
+          """
+        }
+      }
+    }
+
+    stage('Switch Live Traffic') {
+      steps {
+        script {
+          sh """kubectl patch svc ${env.LIVE_SVC} -n ${env.KUBE_NS} \
+            -p '{\"spec\":{\"selector\":{\"app\":\"happy-paws\",\"track\":\"${env.IDLE_COLOR}\"}}}'"""
+        }
+      }
+    }
+
+    stage('Scale Down Old Color?') {
+      when { expression { return params.SCALE_DOWN_OLD } }
+      steps {
+        script {
+          def old = (env.LIVE_COLOR == 'blue') ? env.DEPLOY_BLUE : env.DEPLOY_GREEN
+          sh "kubectl scale -n ${env.KUBE_NS} deployment/${old} --replicas=0"
+        }
+      }
+    }
+  }
+
+  post {
+    success { echo "SUCCESS: Deployed ${env.IMAGE}:${env.TAG} to ${env.IDLE_COLOR}" }
+    failure { echo "Deployment failed. Live remains: ${env.LIVE_COLOR}" }
+  }
+}

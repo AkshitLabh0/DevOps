@@ -1,23 +1,17 @@
-# jenkins.Dockerfile (Option A: Docker Hub)
+# jenkins.Dockerfile
 FROM jenkins/jenkins:lts
 
-# Add this to your jenkins.Dockerfile before USER jenkins:
-RUN apt-get update && apt-get install -y git
-
+# --- run package installs as root ---
 USER root
-
-# Avoid interactive prompts during apt installs
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Base tools
+# Base packages (includes git)
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      ca-certificates curl gnupg lsb-release \
+      ca-certificates curl gnupg lsb-release git \
  && rm -rf /var/lib/apt/lists/*
 
-# ----------------------------
-# Docker CLI (via Docker APT repo) - no apt-key, use keyring
-# ----------------------------
+# Docker CLI via Docker’s APT repo (keyring, no apt-key)
 RUN install -m 0755 -d /etc/apt/keyrings \
  && curl -fsSL https://download.docker.com/linux/debian/gpg \
     | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
@@ -30,14 +24,10 @@ RUN install -m 0755 -d /etc/apt/keyrings \
  && apt-get install -y --no-install-recommends docker-ce-cli \
  && rm -rf /var/lib/apt/lists/*
 
-# ----------------------------
-# kubectl (download the static binary)
-# ----------------------------
+# kubectl (static binary)
 RUN curl -L -s https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl \
       -o /usr/local/bin/kubectl \
  && chmod 0755 /usr/local/bin/kubectl
 
-# (Optional) Verify binaries
-# RUN docker --version && kubectl version --client
-
+# --- drop back to the Jenkins user ---
 USER jenkins

@@ -14,10 +14,11 @@ pipeline {
     }
 
     stage('Build Docker Image') {
-      steps {
-        sh "docker build -f dockerfile -t ${IMAGE}:${TAG} ."
-      }
+  steps {
+    sh "docker build -t ${IMAGE}:${TAG} ."
+        }
     }
+
 
     stage('Push to Docker Hub') {
       steps {
@@ -28,15 +29,15 @@ pipeline {
       }
     }
 
-    stage('Deploy to Kubernetes') {
-      steps {
-        sh "kubectl apply -f k8s/service.yaml || true"
-        sh "kubectl apply -f k8s/deployment.yaml || true"
-        sh "kubectl set image deployment/${DEPLOYMENT} ${CONTAINER}=${IMAGE}:${TAG} --record"
-        sh "kubectl rollout status deployment/${DEPLOYMENT} -w --timeout=180s"
-      }
-    }
+stage('Deploy to Kubernetes') {
+  steps {
+    sh "kubectl apply -f k8s/service.yaml || true"
+    sh "kubectl apply -f k8s/deployment.yaml || true"
+    sh "kubectl set image deployment/${DEPLOYMENT} ${CONTAINER}=${IMAGE}:${TAG}"
+    sh "kubectl rollout status deployment/${DEPLOYMENT} -w --timeout=180s"
   }
+}
+
 
   post {
     always { echo "Pipeline build ${currentBuild.currentResult}" }
