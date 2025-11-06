@@ -1,5 +1,9 @@
 # jenkins.Dockerfile (Option A: Docker Hub)
 FROM jenkins/jenkins:lts
+
+# Add this to your jenkins.Dockerfile before USER jenkins:
+RUN apt-get update && apt-get install -y git
+
 USER root
 
 # Avoid interactive prompts during apt installs
