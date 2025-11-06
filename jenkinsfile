@@ -1,0 +1,56 @@
+pipeline {
+  agent any
+  environment {
+    IMAGE = "DOCKERHUB_USER/happy-paws"   // <-- change this
+    TAG   = "${env.BUILD_NUMBER}"        // unique tag per build
+    CREDS = "dockerhub-creds"            // your credentials ID
+    DEPLOYMENT = "happy-paws"
+    CONTAINER  = "happy-paws"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Docker Build') {
+      steps {
+        script {
+          docker.build("${IMAGE}:${TAG}")
+        }
+      }
+    }
+
+    stage('Docker Push') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: env.CREDS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+          sh 'echo $PASS | docker login -u $USER --password-stdin'
+          sh "docker push ${IMAGE}:${TAG}"
+        }
+      }
+    }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        // Ensure manifests exist (first time already applied, but this is safe)
+        sh "kubectl apply -f k8s/service.yaml || true"
+        sh "kubectl apply -f k8s/deployment.yaml"
+
+        // Update deployment image to the new tag and wait for rollout
+        sh "kubectl set image deployment/${DEPLOYMENT} ${CONTAINER}=${IMAGE}:${TAG} --record"
+        sh "kubectl rollout status deployment/${DEPLOYMENT} -w --timeout=180s"
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "Deployed ${IMAGE}:${TAG} to Kubernetes."
+    }
+    failure {
+      sh 'kubectl get pods -o wide || true'
+      sh "kubectl describe deployment ${DEPLOYMENT} || true"
+      sh "kubectl get events --sort-by=.lastTimestamp | tail -n 50 || true"
+    }
+  }
+}
