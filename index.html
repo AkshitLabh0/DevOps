@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Happy Paws — Animal Adoption</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f1724; /* deep navy */
+      --surface:#0b1220;
+      --muted:#9aa4b2;
+      --text:#e6eef6;
+      --accent:#ff7a59; /* warm coral */
+      --accent-2:#6de0b6; /* mint */
+      --glass: rgba(255,255,255,0.04);
+      --radius:14px;
+      --max-width:1100px;
+      --shadow: 0 8px 30px rgba(2,6,23,0.6);
+      color-scheme: dark;
+    }
+    
+    /* light theme overrides */
+    :root.light{
+      --bg:#f6f7fb;
+      --surface:#ffffff;
+      --muted:#5c6573;
+      --text:#0f1724;
+      --glass: rgba(15,23,36,0.05);
+      color-scheme: light;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg) 60%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.45;
+      padding:40px 20px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .container{width:100%;max-width:var(--max-width)}
+
+    /* Header */
+    header{display:flex;gap:18px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .brand{display:flex;gap:14px;align-items:center}
+    .logo{width:54px;height:54px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ffb58a);display:grid;place-items:center;box-shadow:var(--shadow);font-weight:800;color:#0b1220;font-size:20px}
+    .brand h1{margin:0;font-size:18px}
+    .brand p{margin:0;font-size:12px;color:var(--muted)}
+
+    /* top controls */
+    .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .search{display:flex;align-items:center;background:var(--glass);padding:8px 12px;border-radius:999px;gap:8px;min-width:220px;border:1px solid rgba(255,255,255,0.08)}
+    :root.light .search{border-color:rgba(15,23,36,0.08)}
+    .search input{background:transparent;border:0;outline:none;color:inherit;font-size:14px}
+    .btn{background:linear-gradient(90deg,var(--accent),#ffab8e);border:0;padding:9px 14px;border-radius:10px;color:#071126;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(255,122,89,0.15)}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
+    :root.light .ghost{border-color:rgba(15,23,36,0.12)}
+    .icon-btn{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.08);cursor:pointer}
+
+    /* Hero */
+    .hero{display:flex;gap:20px;align-items:center;margin-bottom:12px}
+    .hero .info{flex:1}
+    .hero h2{margin:0;font-size:28px}
+    .hero p{margin:8px 0 0;color:var(--muted)}
+
+    /* Bar (filters + sort) */
+    .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0 20px}
+    .filters{display:flex;gap:10px;flex-wrap:wrap}
+    .chip{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);cursor:pointer;color:var(--muted);font-size:13px}
+    :root.light .chip{background:rgba(15,23,36,0.02);border-color:rgba(15,23,36,0.08)}
+    .chip.active{background:linear-gradient(90deg,var(--accent-2),#88e0b9);color:#05251b;font-weight:600;border:0}
+    .sort{display:flex;align-items:center;gap:8px}
+    .sort select{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:inherit}
+    :root.light .sort select{border-color:rgba(15,23,36,0.12)}
+
+    /* Grid */
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    @media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){.grid{grid-template-columns:1fr}}
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;position:relative}
+    :root.light .card{border-color:rgba(15,23,36,0.08)}
+    .card .media{height:180px;background-size:cover;background-position:center}
+    .save{position:absolute;right:10px;top:10px;display:grid;place-items:center;width:38px;height:38px;border-radius:999px;background:var(--glass);border:1px solid rgba(255,255,255,0.12);cursor:pointer}
+    .save.active{background:linear-gradient(135deg,#ffd1c4,#fff2e9);color:#7a2a11}
+    .card .body{padding:14px;display:flex;flex-direction:column;gap:10px}
+    .meta{display:flex;align-items:center;justify-content:space-between}
+    .name{font-weight:700}
+    .badge{font-size:12px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.08);color:var(--muted)}
+    .desc{font-size:13px;color:var(--muted)}
+    .tags{display:flex;gap:6px;flex-wrap:wrap}
+    .tag{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.06);color:var(--muted)}
+    .actions{display:flex;gap:8px;margin-top:auto}
+    .primary{flex:1;padding:10px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),#ffab8e);color:#071126;font-weight:700;cursor:pointer}
+    .secondary{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:var(--muted);cursor:pointer}
+
+    /* footer */
+    footer{margin-top:24px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;background:linear-gradient(180deg,rgba(2,6,23,0.6), rgba(2,6,23,0.85));display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+    .modal{width:100%;max-width:720px;background:linear-gradient(180deg,#071426,#081827);border-radius:16px;padding:18px;border:1px solid rgba(255,255,255,0.08)}
+    :root.light .modal{background:#fff;border-color:rgba(15,23,36,0.1)}
+    .modal h3{margin:0 0 8px}
+    .form-row{display:flex;gap:8px}
+    .form-row>input,.form-row>select{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:inherit}
+    :root.light .form-row>input,:root.light .form-row>select{border-color:rgba(15,23,36,0.12)}
+    .close{background:transparent;border:0;color:var(--muted);cursor:pointer}
+
+    /* Saved drawer */
+    .drawer{position:fixed;right:0;top:0;bottom:0;width:360px;max-width:92vw;background:var(--surface);border-left:1px solid rgba(255,255,255,0.08);transform:translateX(101%);transition:transform .25s cubic-bezier(.2,.9,.3,1);padding:16px;z-index:50}
+    :root.light .drawer{border-color:rgba(15,23,36,0.08)}
+    .drawer.open{transform:none}
+    .drawer h4{margin:0 0 10px}
+    .saved-list{display:grid;gap:10px;max-height:80vh;overflow:auto}
+    .saved-item{display:flex;gap:10px;align-items:center;border:1px solid rgba(255,255,255,0.08);padding:8px;border-radius:12px}
+    .saved-item img{width:56px;height:56px;border-radius:10px;object-fit:cover}
+    .saved-item .x{margin-left:auto;background:transparent;border:0;color:var(--muted);cursor:pointer}
+
+    /* toast */
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--surface);border:1px solid rgba(255,255,255,0.12);padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);display:none;z-index:60}
+    .toast.show{display:block;animation:fade 2.2s ease both}
+    @keyframes fade{0%{opacity:0;transform:translate(-50%,6px)}15%{opacity:1;transform:translate(-50%,0)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-6px)}}
+
+    /* utilities */
+    .muted{color:var(--muted)}
+    .small{font-size:13px}
+    .hidden{display:none!important}
+
+    /* hover */
+    .card:hover{transform:translateY(-6px);transition:transform 220ms cubic-bezier(.2,.9,.3,1)}
+    .chip:hover{transform:translateY(-2px)}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">HP</div>
+        <div>
+          <h1>Happy Paws</h1>
+          <p>Find your new best friend today</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="search" role="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></circle></svg>
+          <input id="searchInput" placeholder="Search by name, breed, or location" aria-label="Search animals">
+        </div>
+        <button class="ghost" id="viewAll">View all</button>
+        <div class="sort">
+          <span class="small muted">Sort</span>
+          <select id="sortSelect" aria-label="Sort animals">
+            <option value="name-asc">Name A→Z</option>
+            <option value="age-asc">Age Youngest</option>
+            <option value="age-desc">Age Oldest</option>
+          </select>
+        </div>
+        <button class="icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">🌙</button>
+        <button class="btn" id="openSaved">Saved (<span id="savedCount">0</span>)</button>
+        <button class="btn" id="openForm">New Adoption</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="info">
+          <h2>Adopt — don't shop</h2>
+          <p class="muted">Browse animals currently available for adoption. Filter, search, sort, save your favourites, and start an adoption request — all client-side with localStorage.</p>
+        </div>
+      </section>
+
+      <div class="bar">
+        <div class="filters" role="toolbar" aria-label="Filter animals">
+          <button class="chip active" data-type="all">All</button>
+          <button class="chip" data-type="dog">Dogs</button>
+          <button class="chip" data-type="cat">Cats</button>
+          <button class="chip" data-type="small">Small Pets</button>
+          <button class="chip" data-type="senior">Seniors</button>
+        </div>
+        <button class="ghost" id="loadMore">Load more</button>
+      </div>
+
+      <section class="grid" id="cards"></section>
+
+      <footer>
+        <div>Made with ❤️ • Happy Paws Animal Shelter</div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Modal (hidden by default) -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 id="modalTitle">Adoption Request</h3>
+        <button class="close" id="closeModal">✕</button>
+      </div>
+      <p class="muted small" id="modalSubtitle">Fill the form below and our team will contact you about the next steps.</p>
+      <form id="adoptForm" style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
+        <input type="text" id="petName" placeholder="Pet (auto)" readonly style="background:rgba(255,255,255,0.06);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);color:inherit">
+        <div class="form-row">
+          <input required id="fullName" placeholder="Your full name">
+          <input required id="phone" placeholder="Phone number">
+        </div>
+        <div class="form-row">
+          <input required id="email" placeholder="Email address">
+          <select id="city">
+            <option>Choose city</option>
+            <option>Delhi</option>
+            <option>Mumbai</option>
+            <option>Pune</option>
+            <option>Chennai</option>
+          </select>
+        </div>
+        <textarea id="notes" placeholder="Tell us about your home / experience (optional)" style="min-height:90px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:inherit"></textarea>
+        <div style="display:flex;gap:8px">
+          <button class="btn" type="submit">Send Request</button>
+          <button class="ghost" type="button" id="cancelModal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Saved Drawer -->
+  <aside class="drawer" id="drawer">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <h4 style="margin:0">Saved Pets</h4>
+      <span class="small muted" id="drawerHint"></span>
+      <button class="ghost" style="margin-left:auto" id="closeDrawer">Close</button>
+    </div>
+    <div class="saved-list" id="savedList"></div>
+  </aside>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    /* ---------------------------------
+       Data & State
+    --------------------------------- */
+    const animals = [
+      {id:'daisy', name:'Daisy', type:'dog', breed:'Golden Retriever', ageMonths:24, city:'Mumbai', status:'available', img:'https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=1200&auto=format&fit=crop', desc:'Friendly, energetic, great with kids. House-trained and vaccinated.'},
+      {id:'milo', name:'Milo', type:'cat', breed:'Tabby', ageMonths:12, city:'Delhi', status:'available', img:'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?q=80&w=1200&auto=format&fit=crop', desc:'Curious and affectionate — perfect lap cat. Litter trained.'},
+      {id:'peanut', name:'Peanut', type:'small', breed:'Hamster', ageMonths:6, city:'Pune', status:'available', img:'https://images.unsplash.com/photo-1601758123927-1d5f6fb4a5f8?q=80&w=1200&auto=format&fit=crop', desc:'Tiny explorer, loves tunnels and sunflower seeds.'},
+      {id:'bella', name:'Bella', type:'dog', breed:'Beagle', ageMonths:108, city:'Chennai', status:'available', img:'https://images.unsplash.com/photo-1525253086316-d0c936c814f8?q=80&w=1200&auto=format&fit=crop', desc:'Calm and cuddly senior dog, great companion for calm homes.'},
+      {id:'oreo', name:'Oreo', type:'cat', breed:'Persian', ageMonths:36, city:'Kolkata', status:'available', img:'https://images.unsplash.com/photo-1543852786-1cf6624b9987?q=80&w=1200&auto=format&fit=crop', desc:'Fluffy and quiet, enjoys window watching and naps.'},
+      {id:'rocky', name:'Rocky', type:'dog', breed:'Indie', ageMonths:18, city:'Bengaluru', status:'available', img:'https://images.unsplash.com/photo-1558944351-c2f27a2b3c48?q=80&w=1200&auto=format&fit=crop', desc:'Smart and loyal street-rescue looking for a forever home.'},
+      {id:'niblet', name:'Niblet', type:'small', breed:'Guinea Pig', ageMonths:10, city:'Pune', status:'available', img:'https://images.unsplash.com/photo-1594751543129-6701ad0b4f2b?q=80&w=1200&auto=format&fit=crop', desc:'Social little squeaker who loves veggies.'},
+      {id:'shadow', name:'Shadow', type:'cat', breed:'Bombay', ageMonths:84, city:'Delhi', status:'available', img:'https://images.unsplash.com/photo-1595433707802-6b2626ef1c86?q=80&w=1200&auto=format&fit=crop', desc:'Wise, gentle senior cat; low-maintenance companion.'},
+      {id:'buddy', name:'Buddy', type:'dog', breed:'Labrador', ageMonths:30, city:'Hyderabad', status:'available', img:'https://images.unsplash.com/photo-1507149833265-60c372daea22?q=80&w=1200&auto=format&fit=crop', desc:'Playful and food-motivated — loves fetch!'}
+    ];
+
+    const state = {
+      filter:'all',
+      search:'',
+      sort:'name-asc',
+      shown:6, // pagination size
+      saved: new Set(JSON.parse(localStorage.getItem('hp_saved')||'[]')),
+      reserved: new Set(JSON.parse(localStorage.getItem('hp_reserved')||'[]')),
+      theme: localStorage.getItem('hp_theme') || 'dark'
+    };
+
+    /* ---------------------------------
+       Helpers
+    --------------------------------- */
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const monthsToLabel = m => m>=12 ? `${Math.floor(m/12)} yr${Math.floor(m/12)>1?'s':''} ${m%12? m%12+' mo':''}`.trim() : `${m} mo`;
+    const isSenior = a => a.ageMonths >= 84; // 7+ years
+    const saveState = () => {
+      localStorage.setItem('hp_saved', JSON.stringify(Array.from(state.saved)));
+      localStorage.setItem('hp_reserved', JSON.stringify(Array.from(state.reserved)));
+      localStorage.setItem('hp_theme', state.theme);
+    };
+    const toast = (msg)=>{ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200); };
+
+    /* ---------------------------------
+       Render
+    --------------------------------- */
+    const cardsEl = $('#cards');
+    function getFiltered(){
+      let list = animals.slice();
+      // filter type
+      if(state.filter !== 'all'){
+        list = state.filter==='senior' ? list.filter(isSenior) : list.filter(a=>a.type===state.filter);
+      }
+      // search
+      const q = state.search.toLowerCase();
+      if(q){
+        list = list.filter(a=> [a.name,a.breed,a.city].some(x=>x.toLowerCase().includes(q)) );
+      }
+      // sort
+      if(state.sort==='name-asc') list.sort((a,b)=>a.name.localeCompare(b.name));
+      if(state.sort==='age-asc') list.sort((a,b)=>a.ageMonths-b.ageMonths);
+      if(state.sort==='age-desc') list.sort((a,b)=>b.ageMonths-a.ageMonths);
+      return list;
+    }
+
+    function render(){
+      const list = getFiltered();
+      const slice = list.slice(0, state.shown);
+      cardsEl.innerHTML = slice.map(a=>{
+        const saved = state.saved.has(a.id);
+        const reserved = state.reserved.has(a.id);
+        const tags = [a.breed, a.city, isSenior(a)?'Senior':'' ].filter(Boolean)
+                        .map(t=>`<span class="tag">${t}</span>`).join('');
+        return `
+        <article class="card" data-id="${a.id}">
+          <button class="save ${saved?'active':''}" title="Save">${saved?'❤':'♡'}</button>
+          <div class="media" style="background-image:url('${a.img}')"></div>
+          <div class="body">
+            <div class="meta">
+              <div>
+                <div class="name">${a.name}</div>
+                <div class="small muted">${a.type[0].toUpperCase()+a.type.slice(1)} • ${monthsToLabel(a.ageMonths)}</div>
+              </div>
+              <div class="badge">${reserved?'Reserved':'Available'}</div>
+            </div>
+            <div class="tags">${tags}</div>
+            <div class="desc">${a.desc}</div>
+            <div class="actions">
+              <button class="secondary" data-action="view">View</button>
+              <button class="primary" data-action="adopt" ${reserved?'disabled':''}>${reserved?'Reserved':'Adopt'}</button>
+            </div>
+          </div>
+        </article>`
+      }).join('');
+
+      // load more visibility
+      $('#loadMore').classList.toggle('hidden', state.shown >= list.length);
+      // saved count
+      $('#savedCount').textContent = state.saved.size;
+    }
+
+    /* ---------------------------------
+       Events
+    --------------------------------- */
+    // initial theme
+    if(state.theme==='light') document.documentElement.classList.add('light');
+
+    // Filter chips
+    $$('.chip').forEach(chip=>chip.addEventListener('click', ()=>{
+      $$('.chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      state.filter = chip.dataset.type;
+      state.shown = 6;
+      render();
+    }));
+
+    // Search
+    $('#searchInput').addEventListener('input', (e)=>{
+      state.search = e.target.value.trim();
+      state.shown = 6;
+      render();
+    });
+
+    // Sort
+    $('#sortSelect').addEventListener('change', (e)=>{
+      state.sort = e.target.value;
+      render();
+    });
+
+    // View all
+    $('#viewAll').addEventListener('click', ()=>{
+      state.filter='all'; state.search=''; state.sort='name-asc'; state.shown=6;
+      $('#searchInput').value=''; $('#sortSelect').value='name-asc';
+      $$('.chip').forEach(c=>c.classList.toggle('active', c.dataset.type==='all'));
+      render();
+    });
+
+    // Load more
+    $('#loadMore').addEventListener('click', ()=>{ state.shown += 6; render(); });
+
+    // Theme toggle
+    $('#themeToggle').addEventListener('click', ()=>{
+      document.documentElement.classList.toggle('light');
+      state.theme = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+      saveState();
+      $('#themeToggle').textContent = state.theme==='light' ? '☀️' : '🌙';
+    });
+    $('#themeToggle').textContent = state.theme==='light' ? '☀️' : '🌙';
+
+    // Card actions (event delegation)
+    $('#cards').addEventListener('click', (e)=>{
+      const card = e.target.closest('.card');
+      if(!card) return;
+      const id = card.dataset.id;
+      if(e.target.classList.contains('save')){
+        if(state.saved.has(id)) { state.saved.delete(id); toast('Removed from saved'); }
+        else { state.saved.add(id); toast('Saved for later'); }
+        saveState(); render(); updateDrawer();
+      }
+      const act = e.target.dataset.action;
+      const pet = animals.find(a=>a.id===id);
+      if(act==='view'){
+        alert(`${pet.name}
+${pet.breed} • ${monthsToLabel(pet.ageMonths)} • ${pet.city}
+
+${pet.desc}`);
+      }
+      if(act==='adopt'){
+        $('#petName').value = pet.name;
+        showModal();
+      }
+    });
+
+    // Modal open/close
+    const modal = $('#modal');
+    const showModal = ()=>{ modal.style.display='flex'; document.body.style.overflow='hidden'; };
+    const hideModal = ()=>{ modal.style.display='none'; document.body.style.overflow='auto'; };
+    $('#openForm').addEventListener('click', ()=>{ $('#petName').value=''; showModal(); });
+    $('#closeModal').addEventListener('click', hideModal);
+    $('#cancelModal').addEventListener('click', hideModal);
+
+    // Form submit → mark reserved and persist
+    $('#adoptForm').addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      const data = {
+        pet: $('#petName').value,
+        name: $('#fullName').value,
+        phone: $('#phone').value,
+        email: $('#email').value,
+        city: $('#city').value,
+        notes: $('#notes').value
+      };
+      const pet = animals.find(a=>a.name===data.pet);
+      if(pet){ state.reserved.add(pet.id); saveState(); render(); }
+      toast(`Thanks ${data.name}! Your request ${pet?`for ${pet.name} `:''}has been sent.`);
+      hideModal(); ev.target.reset();
+    });
+
+    // Saved drawer
+    const drawer = $('#drawer');
+    const updateDrawer = ()=>{
+      const list = Array.from(state.saved).map(id=>animals.find(a=>a.id===id)).filter(Boolean);
+      $('#drawerHint').textContent = list.length?`(${list.length})`:'';
+      $('#savedList').innerHTML = list.map(a=>`
+        <div class="saved-item">
+          <img src="${a.img}" alt="${a.name}">
+          <div>
+            <div style="font-weight:700">${a.name}</div>
+            <div class="small muted">${a.breed} • ${a.city}</div>
+          </div>
+          <button class="x" data-id="${a.id}">Remove</button>
+        </div>
+      `).join('') || '<div class="small muted">No saved pets yet.</div>';
+    };
+
+    $('#openSaved').addEventListener('click', ()=>{ updateDrawer(); drawer.classList.add('open'); });
+    $('#closeDrawer').addEventListener('click', ()=> drawer.classList.remove('open'));
+    $('#savedList').addEventListener('click', (e)=>{
+      if(e.target.matches('button.x')){
+        state.saved.delete(e.target.dataset.id); saveState(); render(); updateDrawer();
+      }
+    });
+
+    // Kickoff
+    render();
+  </script>
+</body>
+</html>
